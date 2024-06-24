@@ -1,0 +1,181 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<form method="get">
+    <input type="text" name="title" placeholder="영화 제목" value="{{ title_query }}">
+    <input type="text" name="director" placeholder="감독 이름" value="{{ director_query }}">
+    <input type="number" name="year_from" placeholder="시작 연도" value="{{ year_from }}">
+    <input type="number" name="year_to" placeholder="종료 연도" value="{{ year_to }}">
+    <input type="hidden" name="production_status" id="production_status" value="{{ production_status }}">
+    <input type="hidden" name="type" id="type" value="{{ type }}">
+    <input type="hidden" name="genre" id="genre" value="{{ genre }}">
+    <input type="hidden" name="country" id="country" value="{{ country }}">
+    <input type="hidden" name="sort" id="sort" value="{{ sort }}">
+    <button type="submit">검색</button>
+</form>
+
+<div class="sort-buttons" style="text-align: right; margin-bottom: 10px;">
+    <button type="button" onclick="sortResults('m_year')">제작연도순</button>
+    <button type="button" onclick="sortResults('m_korname')">영화명순</button>
+</div>
+    
+<!-- Button to trigger modals -->
+<button type="button" onclick="document.getElementById('statusModal').style.display='block'">제작 상태 선택</button>
+<button type="button" onclick="document.getElementById('typeModal').style.display='block'">유형 선택</button>
+<button type="button" onclick="document.getElementById('genreModal').style.display='block'">장르 선택</button>
+<button type="button" onclick="document.getElementById('countryModal').style.display='block'">제작국가 선택</button>
+
+<!-- Modal for production status checklist -->
+<div id="statusModal" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); border:1px solid #ccc; padding:10px; background-color:white; z-index:1000;">
+    <h3>제작 상태 선택</h3>
+    <ul>
+        {% for status in production_status_list %}
+            <li>
+                <label>
+                    <input type="checkbox" name="status" value="{{ status }}" {% if status in selected_statuses %} checked {% endif %}>
+                    {{ status }}
+                </label>
+            </li>
+        {% endfor %}
+    </ul>
+    <button type="button" onclick="applyFilters('production_status', 'status')">확인</button>
+    <button type="button" onclick="document.getElementById('statusModal').style.display='none'">취소</button>
+</div>
+
+<!-- Modal for type checklist -->
+<div id="typeModal" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); border:1px solid #ccc; padding:10px; background-color:white; z-index:1000;">
+    <h3>유형 선택</h3>
+    <ul>
+        {% for t in type_list %}
+            <li>
+                <label>
+                    <input type="checkbox" name="type" value="{{ t }}" {% if t in selected_types %} checked {% endif %}>
+                    {{ t }}
+                </label>
+            </li>
+        {% endfor %}
+    </ul>
+    <button type="button" onclick="applyFilters('type', 'type')">확인</button>
+    <button type="button" onclick="document.getElementById('typeModal').style.display='none'">취소</button>
+</div>
+
+<!-- Modal for genre checklist -->
+<div id="genreModal" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); border:1px solid #ccc; padding:10px; background-color:white; z-index:1000;">
+    <h3>장르 선택</h3>
+    <ul>
+        {% for g in genre_list %}
+            <li>
+                <label>
+                    <input type="checkbox" name="genre" value="{{ g }}" {% if g in selected_genres %} checked {% endif %}>
+                    {{ g }}
+                </label>
+            </li>
+        {% endfor %}
+    </ul>
+    <button type="button" onclick="applyFilters('genre', 'genre')">확인</button>
+    <button type="button" onclick="document.getElementById('genreModal').style.display='none'">취소</button>
+</div>
+
+<!-- Modal for country checklist -->
+<div id="countryModal" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); border:1px solid #ccc; padding:10px; background-color:white; z-index:1000;">
+    <h3>제작국가 선택</h3>
+    <div style="display: flex; flex-wrap: wrap;">
+        {% for country_list in country_lists %}
+            <ul style="flex: 1; min-width: 200px;">
+                {% for country in country_list %}
+                    <li>
+                        <label>
+                            <input type="checkbox" name="country" value="{{ country }}" {% if country in selected_countries %} checked {% endif %}>
+                            {{ country }}
+                        </label>
+                    </li>
+                {% endfor %}
+            </ul>
+        {% endfor %}
+    </div>
+    <button type="button" onclick="applyFilters('country', 'country')">확인</button>
+    <button type="button" onclick="document.getElementById('countryModal').style.display='none'">취소</button>
+</div>
+<div class="index-buttons">
+    <!-- Korean index buttons -->
+    {% for char in "ㄱㄴㄷㄹㅁㅂㅅㅇㅈㅊㅋㅌㅍㅎ" %}
+        <a href="?index={{ char }}&title={{ title_query }}&director={{ director_query }}&year_from={{ year_from }}&year_to={{ year_to }}&production_status={{ production_status }}&type={{ type }}&genre={{ genre }}&country={{ country }}&sort={{ sort }}&page=1">{{ char }}</a>
+    {% endfor %}
+    <br>
+    <!-- English index buttons -->
+    {% for char in "ABCDEFGHIJKLMNOPQRSTUVWXYZ" %}
+        <a href="?index={{ char }}&title={{ title_query }}&director={{ director_query }}&year_from={{ year_from }}&year_to={{ year_to }}&production_status={{ production_status }}&type={{ type }}&genre={{ genre }}&country={{ country }}&sort={{ sort }}&page=1">{{ char }}</a>
+    {% endfor %}
+</div>
+
+<table>
+    <tr>
+        <th>영화명</th>
+        <th>영화명(영문)</th>
+        <th>제작연도</th>
+        <th>유형</th>
+        <th>제작상태</th>
+        <th>제작사</th>
+        <th>감독</th>
+        <th>장르</th>
+        <th>제작국가</th>
+    </tr>
+    {% for item in page_obj %}
+    <tr>
+        <td>{{ item.m_korname }}</td>
+        <td>{{ item.m_engname }}</td>
+        <td>{{ item.m_year }}</td>
+        <td>{{ item.m_type }}</td>
+        <td>{{ item.m_status }}</td>
+        <td>{{ item.m_company }}</td>
+        <td>
+            {% for director in item.directors %}
+                {{ director }}{% if not forloop.last %}, {% endif %}
+            {% endfor %}
+        </td>
+        <td>
+            {% for genre in item.genres %}
+                {{ genre }}{% if not forloop.last %}, {% endif %}
+            {% endfor %}
+        </td>
+        <td>
+            {% for country in item.countries %}
+                {{ country }}{% if not forloop.last %}, {% endif %}
+            {% endfor %}
+        </td>
+    </tr>
+    {% endfor %}
+</table>
+
+<div class="pagination">
+    <span class="step-links">
+        {% if page_obj.has_previous %}
+            <a href="?page=1&index={{ index_query }}&title={{ title_query }}&director={{ director_query }}&year_from={{ year_from }}&year_to={{ year_to }}&production_status={{ production_status }}&type={{ type }}&genre={{ genre }}&country={{ country }}&sort={{ sort }}">처음</a>
+            <a href="?page={{ page_obj.previous_page_number }}&index={{ index_query }}&title={{ title_query }}&director={{ director_query }}&year_from={{ year_from }}&year_to={{ year_to }}&production_status={{ production_status }}&type={{ type }}&genre={{ genre }}&country={{ country }}&sort={{ sort }}">이전</a>
+        {% endif %}
+
+        <span class="current">
+            Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}.
+        </span>
+
+        {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}&index={{ index_query }}&title={{ title_query }}&director={{ director_query }}&year_from={{ year_from }}&year_to={{ year_to }}&production_status={{ production_status }}&type={{ type }}&genre={{ genre }}&country={{ country }}&sort={{ sort }}">다음</a>
+            <a href="?page={{ page_obj.paginator.num_pages }}&index={{ index_query }}&title={{ title_query }}&director={{ director_query }}&year_from={{ year_from }}&year_to={{ year_to }}&production_status={{ production_status }}&type={{ type }}&genre={{ genre }}&country={{ country }}&sort={{ sort }}">마지막</a>
+        {% endif %}
+    </span>
+</div>
+
+<script>
+function applyFilters(fieldId, checkboxName) {
+    var checkboxes = document.querySelectorAll('input[name="' + checkboxName + '"]:checked');
+    var selectedValues = Array.from(checkboxes).map(cb => cb.value).join(',');
+    document.getElementById(fieldId).value = selectedValues;
+    document.querySelector('form').submit();
+}
+
+function sortResults(sortField) {
+    document.getElementById('sort').value = sortField;
+    document.querySelector('form').submit();
+}
+</script>
+{% endblock %}
